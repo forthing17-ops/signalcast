@@ -1,0 +1,219 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User model with Supabase Auth integration
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  onboarded Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  preferences UserPreferences?
+  preferenceHistory PreferenceHistory[] @relation("UserPreferenceHistory")
+  content     Content[]
+  feedback    UserFeedback[]
+  knowledge   UserKnowledge[]
+  
+  @@map("users")
+}
+
+// User preferences for content personalization
+model UserPreferences {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  
+  // Professional context
+  professionalRole     String?
+  industry            String?
+  companySize         String?
+  experienceLevel     String?
+  currentChallenges   String[] // Current professional challenges
+  formalityLevel      String   @default("professional") // casual, professional, executive
+  decisionFocusAreas  String[] // Areas where user makes key decisions
+  
+  // Technology preferences
+  interests         String[] // Technology interests array
+  techStack         String[] // Current technology stack
+  
+  // Content preferences
+  deliveryFrequency String   @default("daily") // daily, 3x-week, weekly
+  contentDepth      String   @default("detailed") // brief, detailed
+  contentFormats    String[] // articles, videos, podcasts, tools, etc.
+  
+  // Emerging interests
+  curiosityAreas    String[] // Emerging topics to track
+  
+  // Knowledge tracking preferences
+  noveltyPreference Float    @default(0.7) // 0-1 scale (0=more reinforcement, 1=maximum novelty)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history PreferenceHistory[] @relation("PreferencesHistory")
+  
+  @@map("user_preferences")
+}
+
+// Preference change history model for tracking user preference modifications
+model PreferenceHistory {
+  id            String   @id @default(uuid())
+  userId        String
+  fieldChanged  String   // Field name that was changed
+  oldValue      String?  // JSON string of old value
+  newValue      String?  // JSON string of new value
+  changeReason  String?  // Optional reason for change
+  changedAt     DateTime @default(now())
+  
+  // Relations
+  user User @relation("UserPreferenceHistory", fields: [userId], references: [id], onDelete: Cascade, map: "preference_history_user_fkey")
+  userPreferences UserPreferences @relation("PreferencesHistory", fields: [userId], references: [userId], onDelete: Cascade, map: "preference_history_preferences_fkey")
+  
+  @@map("preference_history")
+}
+
+// Content model for synthesized insights
+model Content {
+  id               String   @id @default(uuid())
+  title            String
+  summary          String
+  content          String
+  sourceUrls       String[] // URLs of original content sources
+  topics           String[] // Categorized topics
+  createdBy        String
+  publishedAt      DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  // Source attribution fields
+  sourcePlatform   String?  // reddit, producthunt, etc.
+  sourceMetadata   Json?    // Platform-specific data
+  relevanceScore   Float?   // Content ranking score
+  contentHash      String?  // For duplicate detection
+  
+  // Knowledge tracking fields
+  knowledgeMetadata Json?   // Knowledge complexity, prerequisites, relationships
+  vectorEmbedding   Json?   // Cached OpenAI embeddings for similarity detection
+  
+  // Relations
+  user     User           @relation(fields: [createdBy], references: [id])
+  feedback UserFeedback[]
+  similarity1 ContentSimilarity[] @relation("ContentSimilarity1")
+  similarity2 ContentSimilarity[] @relation("ContentSimilarity2")
+  parentRelationships ContentRelationship[] @relation("ParentRelationships")
+  childRelationships  ContentRelationship[] @relation("ChildRelationships")
+  
+  @@map("content")
+}
+
+// User feedback model for ratings and bookmarks
+model UserFeedback {
+  id         String      @id @default(uuid())
+  userId     String
+  contentId  String
+  rating     Int?        @db.SmallInt // 1-5 star rating
+  isBookmarked Boolean   @default(false)
+  feedback   String?     // Optional text feedback
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  
+  // Composite unique constraint
+  @@unique([userId, contentId])
+  @@map("user_feedback")
+}
+
+// API Rate Limit Usage Tracking model
+model ApiRateLimit {
+  id          String   @id @default(uuid())
+  service     String   // Service name (reddit, producthunt-rss, etc.)
+  timestamp   DateTime
+  windowStart DateTime // Start of the rate limit window
+  windowEnd   DateTime // End of the rate limit window
+  requestCount Int     // Number of requests made in this window
+  createdAt   DateTime @default(now())
+  
+  // Index for efficient querying
+  @@index([service, timestamp])
+  @@index([service, windowStart, windowEnd])
+  @@map("api_rate_limits")
+}
+
+// User knowledge tracking model
+model UserKnowledge {
+  id               String   @id @default(uuid())
+  userId           String
+  topic            String   // Topic or subject area
+  confidenceLevel  Float    // 0-1 scale of user knowledge confidence
+  contentCount     Int      @default(0) // Total content consumed on topic
+  lastInteraction  DateTime @default(now())
+  knowledgeDepth   String   @default("beginner") // beginner, intermediate, advanced
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Composite unique constraint for user-topic pairs
+  @@unique([userId, topic])
+  @@index([userId])
+  @@index([topic])
+  @@map("user_knowledge")
+}
+
+// Content similarity tracking model
+model ContentSimilarity {
+  id              String   @id @default(uuid())
+  contentId1      String
+  contentId2      String
+  similarityScore Float    // 0-1 scale from embeddings comparison
+  comparisonType  String   // semantic, topical, thematic
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  content1 Content @relation("ContentSimilarity1", fields: [contentId1], references: [id], onDelete: Cascade)
+  content2 Content @relation("ContentSimilarity2", fields: [contentId2], references: [id], onDelete: Cascade)
+  
+  // Ensure we don't duplicate similarity comparisons
+  @@unique([contentId1, contentId2])
+  @@index([contentId1])
+  @@index([contentId2])
+  @@index([similarityScore])
+  @@map("content_similarity")
+}
+
+// Content relationship mapping model
+model ContentRelationship {
+  id                String   @id @default(uuid())
+  parentContentId   String
+  childContentId    String
+  relationshipType  String   // builds_on, prerequisite, related, contrasts
+  strength          Float    // 0-1 scale of relationship strength
+  createdAt         DateTime @default(now())
+  
+  // Relations
+  parentContent Content @relation("ParentRelationships", fields: [parentContentId], references: [id], onDelete: Cascade)
+  childContent  Content @relation("ChildRelationships", fields: [childContentId], references: [id], onDelete: Cascade)
+  
+  // Ensure unique relationships
+  @@unique([parentContentId, childContentId, relationshipType])
+  @@index([parentContentId])
+  @@index([childContentId])
+  @@index([relationshipType])
+  @@map("content_relationships")
+}
