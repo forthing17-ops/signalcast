@@ -58,7 +58,8 @@
       "mcp__supabase__get_anon_key",
       "mcp__vercel__list_teams",
       "mcp__vercel__deploy_to_vercel",
-      "Bash(vercel:*)"
+      "Bash(vercel:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": [],
