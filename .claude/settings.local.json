@@ -59,7 +59,9 @@
       "mcp__vercel__list_teams",
       "mcp__vercel__deploy_to_vercel",
       "Bash(vercel:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "mcp__playwright__browser_tabs",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],

@@ -1,45 +1,29 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { PreferencesLayout } from '@/components/preferences/preferences-layout'
+import { AppLayout } from '@/components/layout/AppLayout'
 
 export default async function PreferencesPage() {
-  // Demo mode authentication bypass
-  if (process.env.DEMO_MODE === 'true') {
-    const cookieStore = cookies()
-    const demoSession = cookieStore.get('demo-session')
-    
-    if (!demoSession || demoSession.value !== 'authenticated') {
-      redirect('/auth/login')
-    }
-    
-    // Skip user check in demo mode, proceed to render
-  } else {
-    // Original Supabase auth logic
-    const supabase = createServerComponentClient({ cookies })
+  const supabase = createServerClient()
+  const { data: { session } } = await supabase.auth.getSession()
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      redirect('/login')
-    }
+  if (!session) {
+    redirect('/login')
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold">Preferences</h1>
-            <p className="text-muted-foreground">
+    <AppLayout userEmail={session.user.email}>
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">Preferences</h1>
+            <p className="text-gray-600">
               Customize your personalization settings and content preferences
             </p>
           </div>
           <PreferencesLayout />
         </div>
       </div>
-    </div>
+    </AppLayout>
   )
 }

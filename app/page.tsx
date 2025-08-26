@@ -1,64 +1,76 @@
-export default function Home() {
+import { createServerClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+
+export default async function Home() {
+  const supabase = createServerClient()
+  const { data: { session } } = await supabase.auth.getSession()
+
+  // Check for demo mode cookie
+  if (typeof document !== 'undefined') {
+    const demoSession = document.cookie.includes('demo-session=authenticated')
+    if (demoSession) {
+      redirect('/app')
+    }
+  }
+
+  // If user is authenticated, redirect to app
+  if (session) {
+    redirect('/app')
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          SignalCast Development Environment
-        </p>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <h1 className="text-6xl font-bold">
-          SignalCast
-        </h1>
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
-          <h2 className="mb-3 text-2xl font-semibold">
-            Development{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about SignalCast features and API.
+    <main className="flex min-h-screen flex-col items-center justify-center p-8">
+      <div className="max-w-4xl mx-auto text-center">
+        <div className="mb-8">
+          <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            SignalCast
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            AI-powered content synthesis platform
           </p>
         </div>
 
-        <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about SignalCast in an interactive course with quizzes!
-          </p>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
+          <div className="p-6 bg-white rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-2">Smart Content Discovery</h3>
+            <p className="text-sm text-gray-600">
+              Discover and curate content from multiple sources tailored to your interests
+            </p>
+          </div>
+          
+          <div className="p-6 bg-white rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-2">AI-Powered Synthesis</h3>
+            <p className="text-sm text-gray-600">
+              Get personalized insights and summaries powered by advanced AI
+            </p>
+          </div>
+          
+          <div className="p-6 bg-white rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold mb-2">Knowledge Tracking</h3>
+            <p className="text-sm text-gray-600">
+              Build and track your professional knowledge over time
+            </p>
+          </div>
         </div>
 
-        <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore the Next.js 13 playground.
-          </p>
+        <div className="space-x-4">
+          <Link href="/login">
+            <Button size="lg" className="text-lg px-8">
+              Get Started
+            </Button>
+          </Link>
+          <Link href="/signup">
+            <Button variant="outline" size="lg" className="text-lg px-8">
+              Create Account
+            </Button>
+          </Link>
         </div>
 
-        <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30">
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-sm text-blue-800">
+            <strong>Demo Access:</strong> Use <code className="bg-blue-100 px-1 rounded">forthing17@gmail.com</code> with password <code className="bg-blue-100 px-1 rounded">Thanhan175@</code>
           </p>
         </div>
       </div>
